@@ -12,7 +12,6 @@ from finkvra.utils.features import make_features as fvra_make_features
 from finkvra.utils.labels import cli_label_one_object as fvra_cli_label_one_object
 import json
 from mlflow.tracking import MlflowClient
-import mlflow
 
 # Make sure you start the server FROM THE FINK-VRA-NOTEBOOKS DIRECTORY: mlflow server --host 127.0.0.1 --port 6969
 
