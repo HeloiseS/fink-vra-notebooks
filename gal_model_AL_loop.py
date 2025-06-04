@@ -13,9 +13,8 @@ from finkvra.utils.labels import cli_label_one_object as fvra_cli_label_one_obje
 import json
 from mlflow.tracking import MlflowClient
 import mlflow
-import logging
 
-# Make sure you start the server FROM THE HOME DIRECTORY: mlflow server --host 127.0.0.1 --port 6969
+# Make sure you start the server FROM THE FINK-VRA-NOTEBOOKS DIRECTORY: mlflow server --host 127.0.0.1 --port 6969
 
 # ------------
 # Constants
@@ -30,7 +29,7 @@ label2galclass = {'real': np.nan,
                  }
 
 
-EXPERIMENT = "gal_model_AL2"
+EXPERIMENT = "gal_model_AL"
 SAMPLING_STRATEGY = "uncertainty"
 
 
@@ -84,7 +83,7 @@ meta = meta.loc[valid_candid]
 # 3. Load previous training set and exclude
 # -------------------
 # Artifact: we log and load training IDs as a CSV
-previous_ids_path = "./training_ids.csv"
+previous_ids_path = f"{EXPERIMENT}_training_ids.csv"
 previous_ids_df = pd.read_csv(previous_ids_path)
 CURRENT_ROUND= previous_ids_df.iloc[-1]['round'] + 1
 
@@ -119,7 +118,12 @@ N_i = 0
 
 for _candid in y_pred_pool.index.astype(np.int64):
     try: 
-        classification = label2galclass[labels.loc[_candid].label]
+        try:
+            classification = label2galclass[labels.loc[_candid].label]
+        except TypeError:
+            print("Shit! You got duplicate labels in Data/FinkZTFStream/labeld.csv")
+            print(_candid)
+            exit()
         if not np.isnan(classification):
             new_sample_candid.append(_candid)
             N_i += 1
@@ -130,6 +134,8 @@ for _candid in y_pred_pool.index.astype(np.int64):
         
         # this is where we need the labeling 
         label = fvra_cli_label_one_object(_objectId)
+        if label is None: 
+            continue
         new_labels.append(label)
         new_label_candid.append(_candid)
         classification = label2galclass[label]
@@ -159,7 +165,7 @@ new_ids_df = pd.DataFrame({'candid': np.array(new_sample_candid).astype(np.int64
                           })
 
 train_ids_df = pd.concat([previous_ids_df, new_ids_df]).reset_index(drop=True)
-train_ids_df.to_csv(f'./{EXPERIMENT_NAME}_training_ids.csv')
+train_ids_df.to_csv(f'./{EXPERIMENT}_training_ids.csv', index=False)
 
 # -------------------
 # 7. Make the y_train X_train for new round
@@ -212,4 +218,4 @@ with mlflow.start_run(run_name=f"round_{CURRENT_ROUND}_{SAMPLING_STRATEGY}"):
     )
 
     # Save training state
-    mlflow.log_artifact(f"{EXPERIMENT_NAME}_training_ids.csv")
+    mlflow.log_artifact(f"{EXPERIMENT}_training_ids.csv")
