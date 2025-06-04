@@ -159,7 +159,7 @@ new_ids_df = pd.DataFrame({'candid': np.array(new_sample_candid).astype(np.int64
                           })
 
 train_ids_df = pd.concat([previous_ids_df, new_ids_df]).reset_index(drop=True)
-train_ids_df.to_csv('./training_ids.csv', index=False)
+train_ids_df.to_csv(f'./{EXPERIMENT_NAME}_training_ids.csv')
 
 # -------------------
 # 7. Make the y_train X_train for new round
@@ -173,7 +173,8 @@ X_train = X.loc[train_ids_df.candid]
 # 8. Train!
 # -------------------
 
-MODEL_TAG = f"gal_model_round_{CURRENT_ROUND}"
+ARTIFACT_PATH = "gal_model"
+MODEL_TAG = f"{ARTIFACT_PATH}_round_{CURRENT_ROUND}"
 
 with mlflow.start_run(run_name=f"round_{CURRENT_ROUND}_{SAMPLING_STRATEGY}"):
 
@@ -185,6 +186,7 @@ with mlflow.start_run(run_name=f"round_{CURRENT_ROUND}_{SAMPLING_STRATEGY}"):
         "sampling_strategy": str(SAMPLING_STRATEGY),
         "model_tag": str(MODEL_TAG)
     }
+
     with open("meta.json", "w") as f:
         json.dump(meta_info, f, indent=2)
     mlflow.log_artifact("meta.json")
@@ -204,10 +206,10 @@ with mlflow.start_run(run_name=f"round_{CURRENT_ROUND}_{SAMPLING_STRATEGY}"):
     signature = infer_signature(X_train, clf_new.predict(X_train))
     mlflow.sklearn.log_model(
         clf_new,
-        artifact_path="gal_model",
+        artifact_path=ARTIFACT_PATH,
         signature=signature,
         input_example=X_train.iloc[:2]
     )
 
     # Save training state
-    mlflow.log_artifact("training_ids.csv")
+    mlflow.log_artifact(f"{EXPERIMENT_NAME}_training_ids.csv")
