@@ -15,6 +15,7 @@ from mlflow.tracking import MlflowClient
 
 # Make sure you start the server FROM THE FINK-VRA-NOTEBOOKS DIRECTORY: mlflow server --host 127.0.0.1 --port 6969
 
+# TODO: put paths and constants in config file
 # ------------
 # Constants
 # ------------
@@ -164,12 +165,15 @@ new_ids_df = pd.DataFrame({'candid': np.array(new_sample_candid).astype(np.int64
                           })
 
 train_ids_df = pd.concat([previous_ids_df, new_ids_df]).reset_index(drop=True)
+
+# TODO - add {SAMPLING STRATEGY} to name?
 train_ids_df.to_csv(f'./{EXPERIMENT}_training_ids.csv', index=False)
 
 # -------------------
 # 7. Make the y_train X_train for new round
 # -------------------
 
+# TODO: I think I need to save those somewhere so I can save them to artifacts in ML FLow
 y_train = updated_labels.loc[train_ids_df.candid].label.map(label2galclass)
 X_train = X.loc[train_ids_df.candid]
 
@@ -181,6 +185,7 @@ X_train = X.loc[train_ids_df.candid]
 ARTIFACT_PATH = "gal_model"
 MODEL_TAG = f"{ARTIFACT_PATH}_round_{CURRENT_ROUND}"
 
+# TODO - add precision, recall, F1 score
 with mlflow.start_run(run_name=f"round_{CURRENT_ROUND}_{SAMPLING_STRATEGY}"):
 
     # Log metadata
@@ -197,6 +202,9 @@ with mlflow.start_run(run_name=f"round_{CURRENT_ROUND}_{SAMPLING_STRATEGY}"):
     mlflow.log_artifact("meta.json")
 
     # Train model
+    # Logging parameters
+    mlflow.log_params(params)
+    
     clf_new = HistGradientBoostingClassifier(max_iter=100, 
                                              l2_regularization=10,
                                              random_state=42,
@@ -218,3 +226,4 @@ with mlflow.start_run(run_name=f"round_{CURRENT_ROUND}_{SAMPLING_STRATEGY}"):
 
     # Save training state
     mlflow.log_artifact(f"{EXPERIMENT}_training_ids.csv")
+    # TODO: Save the data as well
